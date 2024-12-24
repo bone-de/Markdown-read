@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MD文档导航</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+    <div class="sidebar" id="sidebar">
+        <div class="search-container">
+            <input type="text" class="search-input" id="searchInput" placeholder="搜索文档...">
+        </div>
+        <div class="tags-section">
+            <div class="tags-title">标签筛选</div>
+            <div id="tagsList"></div>
+            <button class="clear-filters" id="clearFilters">清除筛选</button>
+        </div>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="md-grid" id="mdGrid"></div>
+    <div class="md-viewer" id="mdViewer">
+        <button class="close-button" onclick="closeViewer()">关闭</button>
+        <div class="markdown-body" id="mdContent"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-markdown.min.js"></script>
+    <script src="config.js"></script>
+    <script>
+        // 配置 marked 解析器
+        marked.setOptions({
+            highlight: function(code, lang) {
+                if (Prism.languages[lang]) {
+                    return Prism.highlight(code, Prism.languages[lang], lang);
+                }
+                return code;
+            },
+            breaks: true,
+            gfm: true
+        });
+
+        let allDocs = [];
+        let allTags = new Set();
+        const mdFiles = window.siteConfig.mdFiles;
+
+        async function loadMDFiles() {
+            const grid = document.getElementById('mdGrid');
+            document.title = window.siteConfig.title;
+            
+            for (const file of mdFiles) {
+                try {
+                    const response = await fetch(file.path);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const mdContent = await response.text();
+                    const lines = mdContent.split('\n');
+                    
+                    file.tags.forEach(tag => allTags.add(tag));
+
+                    const doc = {
+                        content: mdContent,
+                        lines,
+                        file,
+                        element: null
+                    };
+
+                    if (file.type === 'announcement') {
+                        const announcement = createAnnouncementCard(doc);
+                        grid.appendChild(announcement);
+                        doc.element = announcement;
+                    } else {
+                        const card = createDocCard(doc);
+                        grid.appendChild(card);
+                        doc.element = card;
+                    }
+
+                    allDocs.push(doc);
+                } catch (error) {
+                    console.error(`Error loading ${file.path}:`, error);
+                    const errorCard = createErrorCard(file);
+                    grid.appendChild(errorCard);
+                }
+            }
+
+            initializeTagFilters();
+            setupLazyLoading();
+        }
+
+        function createAnnouncementCard(doc) {
+            const announcement = document.createElement('div');
+            announcement.className = 'announcement-card';
+            announcement.innerHTML = `
+                <div class="markdown-body">
+                    ${marked.parse(doc.content)}
+                </div>
+            `;
+            return announcement;
+        }
+
+        function createDocCard(doc) {
+            const title = doc.lines[0].replace(/^#\s+/, '').trim();
+            const description = doc.lines[1]?.trim() || '';
+            
+            const card = document.createElement('div');
+            card.className = 'md-card';
+            
+            const img = new Image();
+            img.src = doc.file.background;
+            img.onload = () => {
+                card.style.backgroundImage = `url('${doc.file.background}')`;
+                card.classList.add('loaded');
+            };
+
+            card.innerHTML = `
+                <h2>${title}</h2>
+                <div class="description">${description}</div>
+            `;
+            
+            card.addEventListener('click', () => {
+                showMDContent(doc.content, title);
+            });
+            
+            return card;
+        }
+
+        function createErrorCard(file) {
+            const card = document.createElement('div');
+            card.className = 'md-card error';
+            card.innerHTML = `
+                <h2>加载失败</h2>
+                <div class="description">无法加载文档: ${file.path}</div>
+            `;
+            return card;
+        }
+
+        function initializeTagFilters() {
+            const tagsList = document.getElementById('tagsList');
+            const sortedTags = Array.from(allTags).sort();
+
+            sortedTags.forEach(tag => {
+                const count = mdFiles.filter(file => file.tags.includes(tag)).length;
+                const tagElement = document.createElement('div');
+                tagElement.className = 'tag-filter';
+                tagElement.innerHTML = `
+                    <input type="checkbox" id="tag-${tag}" value="${tag}">
+                    <label for="tag-${tag}">${tag}</label>
+                    <span class="tag-count">${count}</span>
+                `;
+                tagsList.appendChild(tagElement);
+            });
+
+            document.querySelectorAll('.tag-filter input').forEach(checkbox => {
+                checkbox.addEventListener('change', filterDocs);
+            });
+
+            document.getElementById('searchInput').addEventListener('input', debounce(filterDocs, 300));
+            document.getElementById('clearFilters').addEventListener('click', clearFilters);
+        }
+
+        function filterDocs() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const selectedTags = Array.from(document.querySelectorAll('.tag-filter input:checked'))
+                .map(cb => cb.value);
+
+            allDocs.forEach(doc => {
+                const matchesSearch = doc.content.toLowerCase().includes(searchTerm);
+                const matchesTags = selectedTags.length === 0 || 
+                    selectedTags.some(tag => doc.file.tags.includes(tag));
+                
+                doc.element.style.display = (matchesSearch && matchesTags) ? 'block' : 'none';
+                
+                if (matchesSearch && matchesTags) {
+                    doc.element.style.animation = 'fadeIn 0.5s ease forwards';
+                }
+            });
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.querySelectorAll('.tag-filter input').forEach(cb => {
+                cb.checked = false;
+            });
+            filterDocs();
+        }
+
+        function showMDContent(mdContent, title) {
+            const viewer = document.getElementById('mdViewer');
+            const content = document.getElementById('mdContent');
+            
+            // 移除第一行的标题，避免重复
+            const contentWithoutFirstTitle = mdContent
+                .split('\n')
+                .slice(1)
+                .join('\n');
+            
+            content.innerHTML = `
+                <h1>${title}</h1>
+                ${marked.parse(contentWithoutFirstTitle)}
+            `;
+            
+            content.querySelectorAll('pre code').forEach((block) => {
+                Prism.highlightElement(block);
+            });
+            
+            viewer.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            viewer.scrollTop = 0;
+        }
+
+        function closeViewer() {
+            document.getElementById('mdViewer').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function setupLazyLoading() {
+            const options = {
+                root: null,
+                rootMargin: '50px',
+                threshold: 0.1
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target.querySelector('img');
+                        if (img && img.dataset.src) {
+                            img.src = img.dataset.src;
+                            img.removeAttribute('data-src');
+                        }
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, options);
+
+            document.querySelectorAll('.markdown-body img').forEach(img => {
+                if (img.src) {
+                    img.dataset.src = img.src;
+                    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                    observer.observe(img.parentElement);
+                }
+            });
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 侧边栏事件处理
+        document.getElementById('sidebarToggle').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('sidebar').classList.toggle('open');
+        });
+
+        document.addEventListener('click', (e) => {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            if (!sidebar.contains(e.target) && 
+                !sidebarToggle.contains(e.target) && 
+                sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+            }
+        });
+
+        document.getElementById('sidebar').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeViewer();
+            }
+        });
+
+        window.addEventListener('load', loadMDFiles);
+    </script>
+</body>
+</html>

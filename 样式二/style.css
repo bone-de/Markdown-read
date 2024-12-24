@@ -1,0 +1,433 @@
+:root {
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --card-bg: #f5f5f5;
+    --hover-color: #e0e0e0;
+    --sidebar-bg: #f8f8f8;
+    --active-color: #4a90e2;
+    --border-radius: 15px;
+    --transition: all 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #1a1a1a;
+        --text-color: #ffffff;
+        --card-bg: #2d2d2d;
+        --hover-color: #3d3d3d;
+        --sidebar-bg: #252525;
+        --active-color: #64b5f6;
+    }
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    transition: var(--transition);
+}
+
+body {
+    background: var(--bg-color);
+    margin: 0;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+/* 侧边栏样式 */
+.sidebar {
+    position: fixed;
+    left: -300px;
+    top: 0;
+    width: 300px;
+    height: 100vh;
+    background: var(--sidebar-bg);
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    transition: var(--transition);
+    z-index: 1000;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.sidebar.open {
+    left: 0;
+}
+
+.sidebar-toggle {
+    position: fixed;
+    left: 20px;
+    top: 20px;
+    z-index: 1001;
+    background: var(--active-color);
+    color: white;
+    border: none;
+    padding: 12px 18px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    font-size: 18px;
+}
+
+.sidebar-toggle:hover {
+    transform: scale(1.05);
+}
+
+.search-container {
+    padding: 15px 0;
+    position: sticky;
+    top: 0;
+    background: var(--sidebar-bg);
+    z-index: 2;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid var(--hover-color);
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    transition: var(--transition);
+}
+
+.search-input:focus {
+    border-color: var(--active-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.tags-section {
+    margin-top: 20px;
+}
+
+.tags-title {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--active-color);
+    color: var(--text-color);
+}
+
+.tag-filter {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    margin: 8px 0;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    background: var(--card-bg);
+}
+
+.tag-filter:hover {
+    background: var(--hover-color);
+    transform: translateX(5px);
+}
+
+.tag-filter input[type="checkbox"] {
+    margin-right: 12px;
+    width: 18px;
+    height: 18px;
+}
+
+.tag-count {
+    margin-left: auto;
+    background: var(--active-color);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.clear-filters {
+    width: 100%;
+    padding: 12px;
+    background: var(--active-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    margin-top: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.clear-filters:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* 网格布局 */
+.md-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 25px;
+    padding: 20px;
+    margin-left: 60px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+/* 公告卡片样式 */
+.announcement-card {
+    grid-column: 1 / -1;
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 35px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: var(--transition);
+}
+
+.announcement-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.announcement-card .markdown-body {
+    background: transparent;
+    padding: 0;
+    color: var(--text-color);
+    font-size: 1.1em;
+    line-height: 1.8;
+}
+
+/* 文档卡片样式 */
+.md-card {
+    height: 220px;
+    border-radius: var(--border-radius);
+    padding: 25px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background-size: cover;
+    background-position: center;
+}
+
+.md-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.2) 0%,
+        rgba(0,0,0,0.8) 100%
+    );
+    z-index: 1;
+    transition: var(--transition);
+}
+
+.md-card:hover {
+    transform: translateY(-5px);
+}
+
+.md-card:hover::before {
+    background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.3) 0%,
+        rgba(0,0,0,0.9) 100%
+    );
+}
+
+.md-card h2 {
+    margin: 0;
+    font-size: 1.6em;
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.md-card .description {
+    margin-top: 10px;
+    font-size: 1em;
+    opacity: 0.9;
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* MD查看器样式 */
+.md-viewer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-color);
+    padding: 40px;
+    overflow-y: auto;
+    display: none;
+    z-index: 1000;
+}
+
+.md-viewer.active {
+    display: block;
+}
+
+.md-viewer .markdown-body {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px;
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.close-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 24px;
+    background: var(--active-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    z-index: 1001;
+    font-size: 16px;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.close-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Markdown 样式优化 */
+.markdown-body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.8;
+    color: var(--text-color);
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+    margin-top: 1.5em;
+    margin-bottom: 1em;
+    color: var(--text-color);
+}
+
+.markdown-body h1 {
+    font-size: 2em;
+    border-bottom: 2px solid var(--hover-color);
+    padding-bottom: 0.3em;
+}
+
+.markdown-body h2 {
+    font-size: 1.75em;
+    border-bottom: 1px solid var(--hover-color);
+    padding-bottom: 0.3em;
+}
+
+.markdown-body p {
+    margin: 1em 0;
+    line-height: 1.8;
+}
+
+.markdown-body code {
+    background-color: var(--card-bg);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.markdown-body pre {
+    background-color: var(--card-bg);
+    padding: 16px;
+    border-radius: var(--border-radius);
+    overflow-x: auto;
+}
+
+.markdown-body blockquote {
+    border-left: 4px solid var(--active-color);
+    padding: 0 1em;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.markdown-body img {
+    max-width: 100%;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.markdown-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+}
+
+.markdown-body th,
+.markdown-body td {
+    padding: 12px;
+    border: 1px solid var(--hover-color);
+}
+
+.markdown-body th {
+    background-color: var(--card-bg);
+}
+
+.markdown-body ul,
+.markdown-body ol {
+    padding-left: 2em;
+}
+
+.markdown-body li {
+    margin: 0.5em 0;
+}
+
+.markdown-body hr {
+    border: none;
+    border-top: 2px solid var(--hover-color);
+    margin: 2em 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        left: -100%;
+    }
+    
+    .md-grid {
+        grid-template-columns: 1fr;
+        margin-left: 0;
+        padding: 15px;
+        gap: 20px;
+    }
+
+    .announcement-card {
+        padding: 25px;
+    }
+
+    .md-viewer {
+        padding: 20px;
+    }
+
+    .md-viewer .markdown-body {
+        padding: 20px;
+    }
+
+    .md-card {
+        height: 180px;
+    }
+}

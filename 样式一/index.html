@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown 文章阅读器</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="container">
+        <div id="sidebar">
+            <h2>目录</h2>
+            <ul id="directory"></ul>
+            <a href="https://github.com/你的用户名/你的仓库" target="_blank" id="github-button">
+                GitHub
+            </a>
+        </div>
+        <div id="content">
+            <div id="mode-toggle" title="切换日夜间模式">
+                <span id="sun-icon">☀️</span>
+            </div>
+            <div id="article"></div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/2.1.3/marked.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
